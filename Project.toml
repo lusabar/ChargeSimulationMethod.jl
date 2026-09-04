@@ -1,0 +1,10 @@
+name = "ChargeSimulationMethod"
+uuid = "ba1e40c6-b836-43d2-9530-2500f7e26dce"
+version = "0.1.0"
+authors = ["Lucas Sales Barbosa <lucassalesb10@gmail.com>"]
+
+[deps]
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+
+[compat]
+StaticArrays = "1.9.20"
