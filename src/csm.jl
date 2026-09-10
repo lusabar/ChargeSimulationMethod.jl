@@ -31,6 +31,8 @@ function check_accuracy(check_pts::Vector{ContourPoint}, charges::Vector{<:Charg
     verbose=false,
     tol=1e-5)
 
+    errs_percent = []
+
     for pt in check_pts
         v = 0
         for ch in charges
@@ -40,6 +42,7 @@ function check_accuracy(check_pts::Vector{ContourPoint}, charges::Vector{<:Charg
 
 
         err = abs(pt.v - v) / abs(pt.v)
+        push!(errs_percent, err*100)
 
         if verbose
             println("Error at point $(pt.pos): $(100*err)%")
@@ -49,6 +52,8 @@ function check_accuracy(check_pts::Vector{ContourPoint}, charges::Vector{<:Charg
             println("ERROR EXCEEDED LIMIT!")
         end
     end
+
+    return errs_percent
 
 end
 
@@ -68,8 +73,8 @@ function solve_csm(pts::Vector{ContourPoint}, charges::Vector{<:Charge};
         charges[i].q = Q[i]
     end
 
-    check_accuracy(check_pts, charges, verbose=false)
+    errs_percent = check_accuracy(check_pts, charges, verbose=false)
 
 
-    return charges
+    return charges, errs_percent
 end
