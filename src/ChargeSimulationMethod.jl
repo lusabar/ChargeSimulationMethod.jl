@@ -215,12 +215,26 @@ function calc_ground2(conds::Vector{<:Conductor}, sim::Simulation)
     charges, contour_points = create_charges_and_contour_points(conds, sim)
     check_points = create_checkpoints(conds)
 
-    charges = solve_csm(contour_points, charges, check_pts=check_points)
+    charges, errs_percent = solve_csm(contour_points, charges, check_pts=check_points)
 
     # jz = [complex(a.pos.x, a.pos.y) for a in charges]
     # Q = [ch.q for ch in charges]
     # (x, y) = field_along_ground(Q, jz)
     (x, y) = ground_field(charges)
+
+    return (x, y, errs_percent)
+end
+
+function calc_ground_t(conds::Vector{<:Conductor}, sim::Simulation)
+    charges, contour_points = create_charges_and_contour_points(conds, sim)
+    check_points = create_checkpoints(conds)
+
+    charges = solve_csm(contour_points, charges, check_pts=check_points)
+
+    # jz = [complex(a.pos.x, a.pos.y) for a in charges]
+    # Q = [ch.q for ch in charges]
+    # (x, y) = field_along_ground(Q, jz)
+    (x, y) = ground_field_t(charges)
 
     return (x, y)
 end
