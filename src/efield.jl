@@ -7,6 +7,7 @@ end
 fcoeff(charge::LineCharge, cont::SVector) = fcoeff(cont::SVector, charge::LineCharge)
 
 function efield(pt::SVector, charges::Vector{<:Charge})
+    println("isso é novo")
     E = SVector(0, 0)
     for ch in charges
         E += ch.q * fcoeff(pt, ch)
