@@ -1,8 +1,17 @@
 module ChargeSimulationMethod
+export pol
 using StaticArrays
 using LinearAlgebra
 
 include("csm.jl")
+
+pol(m, a) = m * cis(rad2deg(a))
+
+struct Simulation
+    rmul::AbstractFloat # Multiplier of the radius of charges
+    ncharges::Int
+    range
+end
 include("efield.jl")
 
 const ϵ = 8.8541878188e-12
@@ -16,10 +25,6 @@ struct SolidConductor <: Conductor
     v::Complex
 end
 
-struct Simulation
-    rmul::AbstractFloat # Multiplier of the radius of charges
-    ncharges::Int
-end
 
 function creatematrices(conds::Vector{SolidConductor}, sim::Simulation)
     # j = Array{AbstractFloat}(undef, sim.ncharges * length(vec))
@@ -69,16 +74,6 @@ function calculate_coeff_matrix(i::Vector{SVector}, j::Vector{SVector})
     return M
 end
 
-function timedE(Q::Array{Complex})
-    t = range(0, 16.67e-3, 100)
-    x = range(-100, 100, 41)
-    ω = 120π # Angular frequency at 60Hz
-
-    #qtimes = []
-    #for i in t
-    #    push!(qtimes, )
-    #end
-end
 
 ################################################################################
 function field_contribution(λ::Complex, zj::Complex, z::Complex)
@@ -126,22 +121,6 @@ function distance_with_image(j::SVector, p::SVector)
     return (1/norm(j - p)) - (1/norm(image - p))
 end
 
-function attempt(Q::Array{Complex}, j::Array)
-    ground = range(-100, 100, 41)
-    jx = [complex(a.x, a.y) for a in j]
-
-    y = []
-
-    for x in ground
-        E::Complex = 0
-        for i in 1:length(j)
-            E += (Q[i] / 2π*ϵ) * distance_with_image(j[i], SVector(x, 1))
-        end
-        push!(y, E)
-    end
-
-    return (ground, y)
-end
 
 function check_accuracy(conds::Vector{SolidConductor}, sim::Simulation, j::Vector{SVector}, Q::Vector{Complex})
     ϕ_acc_target::Vector{Complex} = []
@@ -217,10 +196,13 @@ function calc_ground2(conds::Vector{<:Conductor}, sim::Simulation)
 
     charges, errs_percent = solve_csm(contour_points, charges, check_pts=check_points)
 
+    ## Remover dps
+    # println(charges)
+
     # jz = [complex(a.pos.x, a.pos.y) for a in charges]
     # Q = [ch.q for ch in charges]
     # (x, y) = field_along_ground(Q, jz)
-    (x, y) = ground_field(charges)
+    (x, y) = ground_field(charges, sim)
 
     return (x, y, errs_percent)
 end

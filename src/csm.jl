@@ -46,11 +46,12 @@ function check_accuracy(check_pts::Vector{ContourPoint}, charges::Vector{<:Charg
 
         if verbose
             println("Error at point $(pt.pos): $(100*err)%")
+
+            if err > tol
+                println("ERROR EXCEEDED LIMIT!")
+            end
         end
 
-        if err > tol
-            println("ERROR EXCEEDED LIMIT!")
-        end
     end
 
     return errs_percent
