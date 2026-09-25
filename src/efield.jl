@@ -12,30 +12,49 @@ function efield(pt::SVector, charges::Vector{<:Charge})
         E += ch.q * fcoeff(pt, ch)
     end
 
-    #println("Ex: $(E.x)")
-    #println("Ey: $(E.y)")
-
-    return norm(E)
-    # The  original is above 
-    #Ex, Ey = E[1], E[2]
-    #Ax, Ay = abs(Ex), abs(Ey)
-    #Δφ = angle(Ex) - angle(Ey)
-
-    ## peak resultant magnitude of the elliptically-rotating field vector,
-    ## not the RMS-combined sqrt(Ax^2+Ay^2)
-    #disc = max(0.0, Ax^4 + Ay^4 + 2*Ax^2*Ay^2*cos(2Δφ))  # clamp tiny FP negatives
-    #return sqrt((Ax^2 + Ay^2)/2 + 0.5*sqrt(disc))
-
+    return E # Returns the vector, the caller must use `norm` if desired
 end
 
-function ground_field(charges::Vector{<:Charge}, sim::Simulation;
+function ground_field(charges::Vector{<:Charge}, sim::SimulationGround;
     HEIGHT=1)
     xs = sim.range
     y = []
 
     for x in xs
-        push!(y, efield(SVector(x, HEIGHT), charges))
+        push!(y, efield(SVector(x, HEIGHT), charges) |> norm)
     end
     return xs, y
+end
+
+# Points where E will be determined
+function create_epoints(conds::Vector{SolidConductor}, sim::SimulationConductor)
+    epoints::Vector{SVector} = []
+    for cond in conds, a in sim.angs_range, mul in sim.rads_mul 
+        push!(epoints, cond.pos + polsvec(cond.r*mul, a))
+    end
+    return epoints
+end
+
+function cond_field(conds::Vector{<:Conductor}, charges::Vector{<:Charge}, sim::SimulationConductor)
+    epoints = create_epoints(conds, sim)
+    res = []
+
+    for pt in epoints
+        push!(res, [pt... norm(efield(pt, charges))])
+    end
+
+    return res
+end
+
+function general_field(conds::Vector{<:Conductor}, charges::Vector{<:Charge}, sim::SimulationGeneral)
+    res = Tuple{SVector{2,Float64}, SVector{2,Float64}}[]
+
+    for pt in sim.epoints
+        push!(res, (pt, efield(pt, charges)))
+        #push!(res, [pt efield(pt, charges)])
+        #push!(res, [efield(pt, charges)])
+    end
+
+    return res
 end
 

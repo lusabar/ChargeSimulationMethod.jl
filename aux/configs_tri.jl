@@ -5,7 +5,7 @@ fields = Array{Any}(undef, 15)
 c = 1
 for i in 1:5
     for j in (i+1):6
-        fields[c] = :($(Symbol("v" * string(i) * string(j)))::Int)
+        fields[c] = :($(Symbol("a" * string(i) * string(j)))::Int)
         global c += 1
     end
 end
@@ -31,16 +31,8 @@ end
 
 phases = Dict(
     'a' => 0,
-    'b' => -60,
-    'c' => -120,
-    'd' => -180,
-    'e' => -240,
-    'f' => -300,
-)
-phasestri = Dict(
-    'a' => 0,
     'b' => -120,
-    'c' => 120,
+    'c' => +120,
 )
 
 function fixtuple(t::NTuple{15,Int64})
@@ -141,13 +133,22 @@ end
 
 
 
-hex_strs = String.(collect(Combinatorics.permutations("abcdef")))
-hex_confs = Array{Configuration}(undef, 720)
-for (id, str) in enumerate(hex_strs)
-    hex_confs[id] = Configuration(str, :hex)
+
+config_phases_single = String.(collect(Combinatorics.permutations("abc")))
+config_phases_double = []
+for x in config_phases_single
+    for y in config_phases_single
+        global config_phases_double = [config_phases_double; x * y]
+    end
 end
 
-new_arr = rm_equiv(hex_confs)
+
+tri_confs = Array{Configuration}(undef, 36)
+for (id, str) in enumerate(config_phases_double)
+    tri_confs[id] = Configuration(str, :hex)
+end
+
+new_arr = rm_equiv(tri_confs)
 #println("The length of the new array is $(length(new_arr))")
 
 # Names the duplicates for each config
@@ -172,7 +173,7 @@ end
 
 using JSON
 
-open("configurations.json", "w") do io
+open("configurations_tri.json", "w") do io
     JSON.print(io, newernewer_arr, 2)   # 2 = indent width, for pretty-printing
 end
 

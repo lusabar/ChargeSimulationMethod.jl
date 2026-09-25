@@ -5,14 +5,30 @@ using LinearAlgebra
 
 include("csm.jl")
 
-pol(m, a) = m * cis(rad2deg(a))
+pol(m, a) = m * cis(deg2rad(a))
+polsvec(m, a) = SVector(m*cosd(a), m*sind(a))
 
-struct Simulation
+abstract type Simulation end
+
+struct SimulationGround <: Simulation
     rmul::AbstractFloat # Multiplier of the radius of charges
     ncharges::Int
     range
 end
-include("efield.jl")
+
+struct SimulationConductor <: Simulation
+    rmul::AbstractFloat # Multiplier of the radius of charges
+    ncharges::Int
+    angs_range # 
+    rads_mul # Radius of the E points
+end
+
+struct SimulationGeneral <: Simulation
+    rmul::AbstractFloat # Multiplier of the radius of charges
+    ncharges::Int
+    first_ang::AbstractFloat # Angle of the first charge
+    epoints::Vector{SVector} # Points in which to determine E 
+end
 
 const ϵ = 8.8541878188e-12
 ln = log
@@ -24,6 +40,8 @@ struct SolidConductor <: Conductor
     r::AbstractFloat
     v::Complex
 end
+
+include("efield.jl")
 
 
 function creatematrices(conds::Vector{SolidConductor}, sim::Simulation)
@@ -126,7 +144,7 @@ function check_accuracy(conds::Vector{SolidConductor}, sim::Simulation, j::Vecto
     ϕ_acc_target::Vector{Complex} = []
     checkpoints::Vector{SVector} = []
 
-    angs = 0:20:340
+    angs = 0:10:350
 
     for c in conds
         for x in eachindex(angs)
@@ -163,9 +181,15 @@ function create_charges_and_contour_points(conds::Vector{<:SolidConductor}, sim:
     charges::Vector{LineCharge} = []
     contour_points::Vector{ContourPoint} = []
 
+    if :first_ang in fieldnames(typeof(sim))
+        first_ang = sim.first_ang
+    else 
+        first_ang = 0
+    end
+
     angs = Array{AbstractFloat}(undef, sim.ncharges)
     for i in 1:sim.ncharges
-        angs[i] = (360/sim.ncharges) * (i - 1)
+        angs[i] = first_ang + (360/sim.ncharges) * (i - 1)
     end
 
     for c in conds, ang in angs
@@ -180,7 +204,7 @@ end
 function create_checkpoints(conds::Vector{<:SolidConductor})
     check_points::Vector{ContourPoint} = []
 
-    angs = 0:20:340
+    angs = 0:10:350
 
     for c in conds, ang in angs
         push!(check_points, ContourPoint(c.pos + SVector(c.r*cosd(ang), c.r*sind(ang)), c.v))
@@ -220,6 +244,25 @@ function calc_ground_t(conds::Vector{<:Conductor}, sim::Simulation)
 
     return (x, y)
 end
+
+function calc_cond(conds::Vector{<:Conductor}, sim::SimulationConductor)
+    charges, contour_points = create_charges_and_contour_points(conds, sim)
+    check_points = create_checkpoints(conds)
+
+    charges, errs_percent = solve_csm(contour_points, charges, check_pts=check_points)
+    res = cond_field(conds, charges, sim)
+    return res, errs_percent
+end
+
+function calc_general(conds::Vector{<:Conductor}, sim::SimulationGeneral)
+    charges, contour_points = create_charges_and_contour_points(conds, sim)
+    check_points = create_checkpoints(conds)
+
+    charges, errs_percent = solve_csm(contour_points, charges, check_pts=check_points)
+    res = general_field(conds, charges, sim)
+    return res, charges, errs_percent
+end
+
 
 
 
