@@ -43,6 +43,9 @@ function cond_field(conds::Vector{<:Conductor}, charges::Vector{<:Charge}, sim::
         push!(res, [pt... norm(efield(pt, charges))])
     end
 
+    # FIX: This should be optimized, and done in the previous loop
+    res = reduce(vcat, res)
+
     return res
 end
 
